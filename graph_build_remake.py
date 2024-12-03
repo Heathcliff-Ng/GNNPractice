@@ -366,9 +366,6 @@ def construct_graph_for_region(region_id,
     cell_data = load_cell_coords(cell_coords_file)
 
 
-    voronoi_polygons = calcualte_voronoi_from_coords(cell_data['X'], cell_data['Y'])
-
-
     if cell_types_file is not None:
         # Load cell types
         cell_types = load_cell_types(cell_types_file)
@@ -384,6 +381,19 @@ def construct_graph_for_region(region_id,
         additional_cell_features = load_cell_features(cell_features_file)
         cell_data = merge_cell_dataframes(cell_data, additional_cell_features)
 
+
+    # # 筛选范围内的点
+    # cell_data = cell_data[
+    #     (cell_data['X'] >= x_center - range_radius) &
+    #     (cell_data['X'] <= x_center + range_radius) &
+    #     (cell_data['Y'] >= y_center - range_radius) &
+    #     (cell_data['Y'] <= y_center + range_radius)
+    # ]
+
+    # 从这里拆开，或者把前面 load 数据的部分拆到别的函数里。反正 df 查找坐标很方便
+
+
+    voronoi_polygons = calcualte_voronoi_from_coords(cell_data['X'], cell_data['Y'])
 
     G, node_to_cell_mapping = build_graph_from_cell_coords(cell_data, voronoi_polygons)
 
