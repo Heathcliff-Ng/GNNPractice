@@ -6,6 +6,7 @@ Created on Sat Jul 24 20:12:57 2021
 @author: Weiran
 """
 import os
+import time
 import numpy as np
 import pandas as pd
 import json
@@ -334,33 +335,20 @@ def merge_cell_dataframes(df1, df2):
     df1 = df1.merge(df2, on='CELL_ID')
     return df1
 
-
-def construct_graph_for_region(region_id,
-                               cell_coords_file=None,
-                               cell_types_file=None,
-                               cell_biomarker_expression_file=None,
-                               cell_features_file=None,
-                               graph_output=None,
-                               voronoi_polygon_img_output=None,
-                               graph_img_output=None,
-                               figsize=10):
-    """Construct cellular graph for a region
+def load_cell_data(cell_coords_file=None, cell_types_file=None,
+                   cell_biomarker_expression_file=None, cell_features_file=None):
+    """Load cellular data for graph construct
 
     Args:
-        region_id (str): region id
         cell_coords_file (str): path to csv file containing cell coordinates
         cell_types_file (str): path to csv file containing cell types/annotations
         cell_biomarker_expression_file (str): path to csv file containing cell biomarker expression
         cell_features_file (str): path to csv file containing additional cell features
             Note that features stored in this file can only be numeric and
             will be saved and used as is
-        graph_output (str): path for saving cellular graph as gpickle
-        voronoi_polygon_img_output (str): path for saving voronoi image
-        graph_img_output (str): path for saving dot-line graph image
-        figsize (int): figure size for plotting
 
     Returns:
-        G (nx.Graph): full cellular graph of the region
+        pd.DataFrame: dataframe containing cell features
     """
     assert cell_coords_file is not None, "cell coordinates must be provided"
     cell_data = load_cell_coords(cell_coords_file)
@@ -381,16 +369,43 @@ def construct_graph_for_region(region_id,
         additional_cell_features = load_cell_features(cell_features_file)
         cell_data = merge_cell_dataframes(cell_data, additional_cell_features)
 
+    return cell_data
 
-    # # 筛选范围内的点
-    # cell_data = cell_data[
-    #     (cell_data['X'] >= x_center - range_radius) &
-    #     (cell_data['X'] <= x_center + range_radius) &
-    #     (cell_data['Y'] >= y_center - range_radius) &
-    #     (cell_data['Y'] <= y_center + range_radius)
-    # ]
 
-    # 从这里拆开，或者把前面 load 数据的部分拆到别的函数里。反正 df 查找坐标很方便
+def construct_graph_for_FOV(FOV_center=None,
+                            range_radius=100,
+                            cell_data=None,
+                            graph_output=None,
+                            voronoi_polygon_img_output=None,
+                            graph_img_output=None,
+                            figsize=10):
+    """Construct cellular graph for a specific FOV_center
+
+    Args:
+        FOV_center (list): coordinates [x_center, y_center] defining the center of the Field of View (FOV).
+        range_radius (int): radius around the FOV center within which cells are included in the graph.
+        cell_data (pd.DataFrame): DataFrame containing cell data with columns ['CELL_ID', 'X', 'Y', ...].
+        graph_output (str): path for saving cellular graph as gpickle
+        voronoi_polygon_img_output (str): path for saving voronoi image
+        graph_img_output (str): path for saving dot-line graph image
+        figsize (int): figure size for plotting
+
+    Returns:
+        G (nx.Graph): full cellular graph of the region
+    """
+
+    # record start time
+    start_time = time.time()
+
+    x_center, y_center = FOV_center
+
+    # points in range
+    cell_data = cell_data[
+        (cell_data['X'] >= x_center - range_radius) &
+        (cell_data['X'] <= x_center + range_radius) &
+        (cell_data['Y'] >= y_center - range_radius) &
+        (cell_data['Y'] <= y_center + range_radius)
+    ]
 
 
     voronoi_polygons = calcualte_voronoi_from_coords(cell_data['X'], cell_data['Y'])
@@ -400,7 +415,7 @@ def construct_graph_for_region(region_id,
 
     # Assign attributes to cellular graph
     G = assign_attributes(G, cell_data, node_to_cell_mapping)
-    G.region_id = region_id
+    G.FOV_center = FOV_center
 
     # Visualization of cellular graph
     if voronoi_polygon_img_output is not None:
@@ -420,4 +435,9 @@ def construct_graph_for_region(region_id,
     if graph_output is not None:
         with open(graph_output, 'wb') as f:
             pickle.dump(G, f)
+
+    # record end time
+    end_time = time.time()
+    print(f"Time taken to construct the graph: {end_time - start_time:.2f} seconds")
+
     return G
