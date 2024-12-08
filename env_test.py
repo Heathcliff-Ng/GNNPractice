@@ -37,6 +37,9 @@ class SpatOmics_graph():
         # set FOV size
         self.rs = args.rs
 
+        # set target cell
+        self.target = 'Tumor (CD20+)'
+
 
     def step(self, action, rand=False, isEval=False):
         self.count += 1
@@ -93,9 +96,39 @@ class SpatOmics_graph():
             graph_img_output=graph_img_output
         )
 
-        print(self.pos_sampling)
+        # get reward
+        r_AD = self.measure()
 
-        return state
+        """
+        POSSIBLE OPERATIONS
+        POSSIBLE OPERATIONS
+        POSSIBLE OPERATIONS
+        POSSIBLE OPERATIONS
+        """
+        reward = r_AD
+
+        print(self.pos_sampling)
+        print(reward)
+
+        return state, reward
+
+
+    def measure(self):
+        x_s = self.pos_sampling[0]
+        y_s = self.pos_sampling[1]
+
+        # points in range
+        cell_data_in_range = self.cell_data[
+            (self.cell_data['X'] >= x_s - self.rs/2) &
+            (self.cell_data['X'] <= x_s + self.rs/2) &
+            (self.cell_data['Y'] >= y_s - self.rs/2) &
+            (self.cell_data['Y'] <= y_s + self.rs/2)
+            ]
+
+        # count CELL_TYPE
+        target_count = (cell_data_in_range['CELL_TYPE'] == self.target).sum()
+
+        return target_count
 
 
     def reset(self):
