@@ -17,7 +17,7 @@ import os
 from graph_build_remake import load_cell_data, construct_graph_for_FOV
 
 
-class SpatOmics_dis():
+class SpatOmics_graph():
     def __init__(self, args, exp):
 
         ## load raw data from csv
@@ -120,13 +120,13 @@ class SpatOmics_dis():
 
 
         N = FOV_G.number_of_nodes()
-        x = np.zeros(N, self.cell_type_num, dtype=float)
+        x_matrix = np.zeros((N, self.cell_type_num), dtype=float)
 
         for node, data in FOV_G.nodes(data=True):
             cid = data['cell_id']
             sub = self.cell2sub.get(cid, None)
             if sub is not None:
-                x[node, self.sub2idx[sub]] = 1.0
+                x_matrix[node, self.sub2idx[sub]] = 1.0
 
         edge_list = np.array(list(FOV_G.edges()), dtype=int)
         edge_index = edge_list.T  # shape (2, E)
@@ -163,7 +163,7 @@ class SpatOmics_dis():
         through a fully-connected layer. """
         #state = np.concatenate((np.array([next_x, next_y]), np.array(abs_map), mk))
 
-        return x, edge_index, np.array(abs_map), reward, self.done, r_AD
+        return x_matrix, edge_index, np.array(abs_map), reward, self.done, r_AD
 
 
     def update_map(self):
@@ -278,13 +278,13 @@ class SpatOmics_dis():
         )
 
         N = FOV_G.number_of_nodes()
-        x = np.zeros(N, self.cell_type_num, dtype=float)
+        x_matrix = np.zeros((N, self.cell_type_num), dtype=float)
 
         for node, data in FOV_G.nodes(data=True):
             cid = data['cell_id']
             sub = self.cell2sub.get(cid, None)
             if sub is not None:
-                x[node, self.sub2idx[sub]] = 1.0
+                x_matrix[node, self.sub2idx[sub]] = 1.0
 
         edge_list = np.array(list(FOV_G.edges()), dtype=int)
         edge_index = edge_list.T  # shape (2, E)
@@ -300,5 +300,5 @@ class SpatOmics_dis():
         # state = np.concatenate((np.array([x, y]), np.array(abs_map), mk))
 
 
-        return x, edge_index, np.array(abs_map)
+        return x_matrix, edge_index, np.array(abs_map)
     
