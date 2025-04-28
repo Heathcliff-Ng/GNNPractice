@@ -407,6 +407,15 @@ def construct_graph_for_FOV(FOV_center=None,
         (cell_data['Y'] <= y_center + range_radius)
     ]
 
+    # empty FOV check
+    if cell_data.empty:
+        G = nx.Graph()
+        # set cell_id to 0；no cell_id makes x_matrix[0,:] all 0
+        G.add_node(0, cell_id=None)
+        G.FOV_center = FOV_center
+        print("No cells found in FOV; returning single-node graph.")
+        return G
+
 
     voronoi_polygons = calcualte_voronoi_from_coords(cell_data['X'], cell_data['Y'])
 
